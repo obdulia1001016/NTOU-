@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基隆海底獨木舟探險 & 食魚教育互動網頁</title>
+    <!-- 引入 Tailwind CSS 提供精美 UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google 字型：使用更具趣味感的 Noto Sans TC 粗體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0c4a6e;
+            user-select: none;
+        }
+        /* 讓遊戲畫布撐滿容器 */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: #075985;
+        }
+        /* 卡通按鈕特殊陰影 */
+        .cartoon-btn {
+            box-shadow: 0px 4px 0px #1e293b;
+            border: 2px solid #1e293b;
+        }
+        .cartoon-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0px 2px 0px #1e293b;
+        }
+        /* 卡通外框 */
+        .cartoon-card {
+            border: 4px solid #1e293b;
+            box-shadow: 6px 6px 0px #1e293b;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- 頂部精美導覽列 (分頁切換) -->
+    <header class="bg-amber-100 border-b-4 border-slate-800 p-4 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-3xl">🛶</span>
+                <h1 class="text-xl md:text-2xl font-black text-blue-800 tracking-wider">基隆海洋守護者 & 食魚教育</h1>
+            </div>
+            
+            <!-- 導覽按鈕群 -->
+            <nav class="flex flex-wrap gap-2 justify-center">
+                <button onclick="switchTab('tab-game')" id="nav-game" class="px-4 py-2 rounded-xl text-sm font-black transition duration-150 cartoon-btn bg-sky-400 text-slate-900">
+                    🎮 獨木舟探險趣
+                </button>
+                <button onclick="switchTab('tab-trash-edu')" id="nav-trash-edu" class="px-4 py-2 rounded-xl text-sm font-black transition duration-150 cartoon-btn bg-white text-slate-700 hover:bg-slate-100">
+                    🐳 垃圾大解密
+                </button>
+                <button onclick="switchTab('tab-quiz')" id="nav-quiz" class="px-4 py-2 rounded-xl text-sm font-black transition duration-150 cartoon-btn bg-white text-slate-700 hover:bg-slate-100">
+                    ✏️ 環保小達人測驗
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow relative flex flex-col">
+
+        <!-- ==================== 分頁 1: 獨木舟探險 (遊戲) ==================== -->
+        <section id="tab-game" class="tab-content flex-grow relative overflow-hidden flex flex-col md:flex-row" style="height: calc(100vh - 84px);">
+            
+            <!-- 遊戲視窗左側：狀態計分與「釣魚桶」面板 -->
+            <div class="absolute top-4 left-4 z-10 flex flex-col gap-3 pointer-events-none max-w-xs w-72">
+                <!-- 狀態儀表板 -->
+                <div class="bg-amber-50 text-slate-800 p-3 rounded-2xl border-4 border-slate-800 shadow-[4px_4px_0px_#1e293b] pointer-events-auto">
+                    <h2 class="text-md font-black text-blue-600 flex items-center gap-1">🛶 探索基隆美麗海底</h2>
+                    <p class="text-[11px] text-slate-600 font-bold mt-0.5">🎮 鍵盤方向鍵 <span class="bg-amber-300 px-1 py-0.2 rounded border border-slate-700 font-mono text-xs">▲▼◀▶</span> 移動</p>
+                    <p class="text-[10px] text-emerald-700 font-bold mt-0.5">💡 提示：清除垃圾！遇到魚時做出正確的環保選擇！</p>
+                    <div class="mt-2 flex items-center justify-between bg-white px-2 py-1 rounded-xl border-2 border-slate-800">
+                        <span class="font-bold text-xs">已清理垃圾：</span>
+                        <span id="score-text" class="text-rose-500 font-black text-md">0 / 3</span>
+                    </div>
+                </div>
+
+                <!-- 釣魚桶即時面板 -->
+                <div class="bg-blue-50 text-slate-800 p-3 rounded-2xl border-4 border-slate-800 shadow-[4px_4px_0px_#1e293b] pointer-events-auto flex flex-col">
+                    <h3 class="text-sm font-black text-blue-800 flex items-center gap-1">
+                        🪣 我的釣魚桶
+                    </h3>
+                    <div id="bucket-list" class="mt-1 bg-white border-2 border-slate-700 rounded-xl p-2 min-h-[80px] max-h-[140px] overflow-y-auto flex flex-col gap-1 text-xs font-bold text-slate-500">
+                        <!-- 動態塞入釣到的魚 -->
+                        <span class="text-center py-4 text-slate-400">目前桶子空空如也...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右上角 LNT 標章 -->
+            <div class="absolute top-4 right-4 z-10 pointer-events-none">
+                <div id="lnt-badge" class="transition-all duration-500 transform scale-0 opacity-0 bg-emerald-400 text-slate-900 px-4 py-2 rounded-2xl shadow-[4px_4px_0px_#1e293b] border-4 border-slate-800 flex flex-col items-center justify-center pointer-events-auto">
+                    <span class="text-[10px] font-black tracking-wider text-emerald-900">恭喜達成環保成就！</span>
+                    <span class="text-2xl font-black tracking-widest text-slate-900">LNT</span>
+                    <span class="text-[9px] text-emerald-900 font-bold">Leave No Trace 無痕海洋</span>
+                </div>
+            </div>
+
+            <!-- 手機專用虛擬按鍵 (D-pad) -->
+            <div class="absolute bottom-6 right-6 flex flex-col items-center gap-1 z-10 md:hidden pointer-events-auto">
+                <button id="btn-up" class="w-12 h-12 bg-sky-300 text-slate-800 rounded-full font-black text-xl flex items-center justify-center active:scale-90 cartoon-btn">▲</button>
+                <div class="flex gap-2">
+                    <button id="btn-left" class="w-12 h-12 bg-sky-300 text-slate-800 rounded-full font-black text-xl flex items-center justify-center active:scale-90 cartoon-btn">◀</button>
+                    <div class="w-12 h-12"></div>
+                    <button id="btn-right" class="w-12 h-12 bg-sky-300 text-slate-800 rounded-full font-black text-xl flex items-center justify-center active:scale-90 cartoon-btn">▶</button>
+                </div>
+                <button id="btn-down" class="w-12 h-12 bg-sky-300 text-slate-800 rounded-full font-black text-xl flex items-center justify-center active:scale-90 cartoon-btn">▼</button>
+            </div>
+
+            <!-- 食魚紅綠燈互動卡彈窗 (包含雙重決策) -->
+            <div id="fish-edu-modal" class="absolute inset-0 bg-slate-900/70 flex flex-col items-center justify-center z-20 hidden">
+                <div id="fish-card-bg" class="bg-white border-4 border-slate-800 p-6 rounded-3xl max-w-md w-full mx-4 text-center shadow-[8px_8px_0px_#1e293b] text-slate-800 transform scale-90 transition-transform duration-300">
+                    <!-- 燈號指示 -->
+                    <div id="fish-light-badge" class="inline-block px-4 py-1.5 rounded-full text-white font-black text-sm tracking-wider mb-3">
+                        🟢 建議食用
+                    </div>
+                    
+                    <!-- 魚類圖樣與名字 (由 Canvas 改為精美渲染，這裡彈窗中也加上小介紹) -->
+                    <div class="text-3xl font-black mb-1 text-blue-900" id="fish-name">基隆特產 - 透抽</div>
+                    
+                    <!-- 決策回饋對話框 (預設隱藏，點了決策後顯示) -->
+                    <div id="feedback-alert" class="hidden my-3 p-3 rounded-xl border-3 border-slate-800 font-extrabold text-sm text-left">
+                        回饋訊息
+                    </div>
+
+                    <!-- 食魚教育內容 -->
+                    <div id="fish-info-box" class="bg-slate-50 border-2 border-slate-800 rounded-2xl p-4 text-left mb-5">
+                        <h4 class="font-extrabold text-blue-800 text-sm mb-1">💡 食魚導師說：</h4>
+                        <p class="text-xs text-slate-600 font-bold leading-relaxed" id="fish-desc">
+                            描述載入中...
+                        </p>
+                    </div>
+
+                    <!-- 雙按鈕抉擇區 -->
+                    <div id="decision-buttons" class="flex gap-3">
+                        <button onclick="makeFishDecision('release')" class="flex-1 bg-sky-400 hover:bg-sky-500 text-slate-900 font-black py-3 px-4 rounded-xl cartoon-btn text-sm">
+                            放游牠 💙
+                        </button>
+                        <button onclick="makeFishDecision('keep')" class="flex-1 bg-amber-400 hover:bg-amber-500 text-slate-900 font-black py-3 px-4 rounded-xl cartoon-btn text-sm">
+                            放進釣魚桶 🪣
+                        </button>
+                    </div>
+
+                    <!-- 關閉按鈕 (初始隱藏，做出決定後才顯示) -->
+                    <button id="btn-confirm-next" onclick="closeFishModal()" class="w-full bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-black py-3 px-6 rounded-2xl hidden cartoon-btn text-md">
+                        好的，繼續保護海洋！🚀
+                    </button>
+                </div>
+            </div>
+
+            <!-- 遊戲結束 浮動視窗 -->
+            <div id="game-over-modal" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-20 hidden">
+                <div class="bg-amber-100 border-4 border-slate-800 p-6 rounded-3xl max-w-sm w-full mx-4 text-center shadow-[6px_6px_0px_#1e293b] text-slate-800">
+                    <div class="text-5xl mb-3">🏆</div>
+                    <h2 class="text-xl font-black text-emerald-600 mb-1">太優秀了，老師！</h2>
+                    <p class="text-slate-700 font-bold mb-4 text-xs leading-relaxed">
+                        你完成了無痕海洋挑戰，也認識了水中的魚兒！<br>
+                        基隆海底的垃圾全都清空了！<br>
+                        接下來，去考驗看看你的環保知識吧！✏️
+                    </p>
+                    <div class="flex gap-2">
+                        <button onclick="resetGame()" class="flex-1 bg-sky-400 hover:bg-sky-500 text-slate-900 font-black py-2 px-4 rounded-xl cartoon-btn text-sm">
+                            再玩一次 🛶
+                        </button>
+                        <button onclick="switchTab('tab-quiz')" class="flex-1 bg-emerald-400 hover:bg-emerald-500 text-slate-900 font-black py-2 px-4 rounded-xl cartoon-btn text-sm">
+                            環保小達人測驗 ✏️
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 繪圖畫布 (撐滿右側剩餘視窗) -->
+            <div class="flex-grow h-full">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+        </section>
+
+
+        <!-- ==================== 分頁 2: 垃圾大解密 (海洋知識) ==================== -->
+        <section id="tab-trash-edu" class="tab-content hidden max-w-5xl mx-auto p-6 my-4 w-full">
+            <div class="bg-white rounded-3xl p-6 md:p-8 cartoon-card">
+                <div class="text-center mb-8">
+                    <span class="text-5xl">🐳</span>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 mt-2">海洋垃圾對基隆生態的危害</h2>
+                    <p class="text-slate-600 mt-2 font-bold">遊戲中撿到的垃圾，在真實世界的基隆海域中，需要多久才能被大自然分解？</p>
+                </div>
+
+                <!-- 三大垃圾詳細解析 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- 寶特瓶 -->
+                    <div class="bg-sky-50 rounded-2xl border-4 border-slate-800 p-5 shadow-[4px_4px_0px_#1e293b] flex flex-col justify-between">
+                        <div>
+                            <span class="text-4xl">🍾</span>
+                            <h3 class="text-lg font-black text-blue-800 mt-2">塑膠寶特瓶</h3>
+                            <p class="text-rose-500 font-extrabold text-sm mt-1">分解時間：約 450 年！</p>
+                            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                                寶特瓶在海中會漸漸碎裂成「微塑膠」，這些微小的顆粒會被小魚吸入，再經過食物鏈傳遞到我們餐桌上的海鮮體內！
+                            </p>
+                        </div>
+                        <div class="mt-4 bg-blue-100 p-2.5 rounded-xl text-[11px] font-bold text-blue-900">
+                            💡 減塑行動：出門自行攜帶水壺，減少購買瓶裝飲料！
+                        </div>
+                    </div>
+
+                    <!-- 鋁罐 -->
+                    <div class="bg-red-50 rounded-2xl border-4 border-slate-800 p-5 shadow-[4px_4px_0px_#1e293b] flex flex-col justify-between">
+                        <div>
+                            <span class="text-4xl">🥫</span>
+                            <h3 class="text-lg font-black text-red-800 mt-2">生鏽鋁罐</h3>
+                            <p class="text-rose-500 font-extrabold text-sm mt-1">分解時間：約 80 ~ 200 年！</p>
+                            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                                丟棄在基隆潮境公園或八斗子漁港周邊的鋁罐，生鏽碎裂時銳利的金屬片容易割傷靠岸產卵的海洋生物，也可能成為寄居蟹的「危險陷阱殼」。
+                            </p>
+                        </div>
+                        <div class="mt-4 bg-red-100 p-2.5 rounded-xl text-[11px] font-bold text-red-900">
+                            💡 減塑行動：落實資源回收，不隨意在海灘丟棄空罐！
+                        </div>
+                    </div>
+
+                    <!-- 塑膠袋 -->
+                    <div class="bg-amber-50 rounded-2xl border-4 border-slate-800 p-5 shadow-[4px_4px_0px_#1e293b] flex flex-col justify-between">
+                        <div>
+                            <span class="text-4xl">🛍️</span>
+                            <h3 class="text-lg font-black text-amber-800 mt-2">破舊塑膠袋</h3>
+                            <p class="text-rose-500 font-extrabold text-sm mt-1">分解時間：約 10 ~ 20 年！</p>
+                            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                                塑膠袋在海中漂浮的樣子，長得跟海龜最愛的「水母」一模一樣。海龜常常因為誤食塑膠袋，造成消化系統阻塞而痛苦地死去。
+                            </p>
+                        </div>
+                        <div class="mt-4 bg-amber-100 p-2.5 rounded-xl text-[11px] font-bold text-amber-900">
+                            💡 減塑行動：落實 Leave No Trace (LNT) 帶走所有隨身垃圾！
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LNT 觀念詳細介紹 -->
+                <div class="bg-emerald-50 border-4 border-emerald-500 rounded-2xl p-5">
+                    <h3 class="font-black text-emerald-800 text-lg mb-2">🌊 什麼是 LNT (無痕山林與海洋)？</h3>
+                    <p class="text-sm font-bold text-slate-700 leading-relaxed mb-4">
+                        LNT 代表 「Leave No Trace（不留痕跡）」，起初是山林保護運動，如今也延伸到海洋環境。當我們去基隆的外木山、潮境公園玩水、划獨木舟時，應該遵守以下無痕海洋守則：
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-bold text-emerald-950">
+                        <div class="bg-white p-3 rounded-xl border-2 border-emerald-200">
+                            <span class="text-xl block mb-1">🧼 1. 做好事前準備</span>
+                            減少不必要的塑膠包裝帶上海。
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border-2 border-emerald-200">
+                            <span class="text-xl block mb-1">🚯 2. 妥善處理垃圾</span>
+                            自己的垃圾自己帶回家，並隨手撿起海灘垃圾。
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border-2 border-emerald-200">
+                            <span class="text-xl block mb-1">🦀 3. 保持自然原貌</span>
+                            不帶走任何貝殼與沙子，也不觸碰野生動物。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== 分頁 3: 評量測驗 (遊戲化測驗) ==================== -->
+        <section id="tab-quiz" class="tab-content hidden max-w-2xl mx-auto p-6 my-4 w-full flex-grow flex items-center">
+            <div id="quiz-container" class="bg-white rounded-3xl p-6 md:p-8 cartoon-card w-full">
+                <!-- 測量開始畫面 -->
+                <div id="quiz-start" class="text-center">
+                    <span class="text-6xl">📝</span>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 mt-3">環保小達人挑戰賽</h2>
+                    <p class="text-slate-600 mt-2 font-bold mb-6">學完了食魚紅綠燈與 LNT 知識，快來測測看你能拿幾分吧！</p>
+                    <button onclick="startQuiz()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-black py-3 px-8 rounded-2xl text-lg cartoon-btn">
+                        開始挑戰！🚦
+                    </button>
+                </div>
+
+                <!-- 答題進行畫面 -->
+                <div id="quiz-active" class="hidden">
+                    <!-- 進度條 -->
+                    <div class="w-full bg-slate-200 h-4 rounded-full border-2 border-slate-800 overflow-hidden mb-4">
+                        <div id="quiz-progress" class="bg-sky-400 h-full transition-all duration-300" style="width: 20%;"></div>
+                    </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span id="quiz-question-num" class="text-sm font-black text-blue-700 bg-blue-100 px-3 py-1 rounded-full">第 1 / 5 題</span>
+                        <span id="quiz-current-score" class="text-sm font-black text-amber-600">目前分數：0</span>
+                    </div>
+
+                    <!-- 題目敘述 -->
+                    <h3 id="quiz-question-text" class="text-lg md:text-xl font-black text-slate-800 mb-6 leading-relaxed">
+                        題目載入中...
+                    </h3>
+
+                    <!-- 選項按鈕群 -->
+                    <div id="quiz-options" class="flex flex-col gap-3">
+                        <!-- 選項會動態產生 -->
+                    </div>
+
+                    <!-- 即時答題回饋 -->
+                    <div id="quiz-feedback" class="mt-4 p-3 rounded-xl border-2 hidden text-center font-bold">
+                        回饋訊息
+                    </div>
+                </div>
+
+                <!-- 測驗結果與證書 -->
+                <div id="quiz-result" class="text-center hidden">
+                    <div class="text-6xl mb-3" id="result-emoji">🏅</div>
+                    <h2 class="text-2xl font-black text-slate-900 mb-1">測驗完成！</h2>
+                    <p class="text-slate-600 font-bold text-md mb-4" id="result-score-text">你得到了 80 分！</p>
+                    
+                    <!-- 卡通海洋守護者證書 -->
+                    <div class="bg-amber-50 border-4 border-dashed border-amber-500 rounded-2xl p-6 mb-6 relative overflow-hidden text-left">
+                        <div class="absolute -right-8 -bottom-8 text-8xl opacity-10">🐋</div>
+                        <h3 class="text-center text-xl font-black text-amber-700 tracking-widest mb-4">👑 海洋守護證書</h3>
+                        <p class="text-sm font-bold text-slate-700 leading-relaxed mb-2">
+                            親愛的環保小達人：
+                        </p>
+                        <p class="text-sm font-bold text-slate-700 leading-relaxed text-indent mb-4" id="result-comment">
+                            恭喜你學會了食魚紅綠燈與海洋減塑知識，並承諾守護基隆的美麗海洋！
+                        </p>
+                        <div class="flex justify-between items-end text-xs font-black text-slate-500">
+                            <div>發證單位：基隆獨木舟探險隊</div>
+                            <div class="text-emerald-600">認證：LNT 無痕守護者</div>
+                        </div>
+                    </div>
+
+                    <button onclick="restartQuiz()" class="bg-sky-400 hover:bg-sky-500 text-slate-900 font-black py-3 px-8 rounded-2xl cartoon-btn">
+                        重新挑戰 🔄
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="bg-slate-800 text-slate-400 text-center py-4 border-t-4 border-slate-900 text-xs font-bold">
+        © 2026 基隆海洋永續教育推廣專案 | 實踐 LNT 精神，守護海洋生態 🌊
+    </footer>
+
+    <!-- JavaScript 邏輯部分 -->
+    <script>
+        // --- 1. 分頁切換邏輯 ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+            }
+
+            const tabs = ['game', 'trash-edu', 'quiz'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (`tab-${t}` === tabId) {
+                    navBtn.classList.remove('bg-white', 'text-slate-700', 'hover:bg-slate-100');
+                    navBtn.classList.add('bg-sky-400', 'text-slate-900');
+                } else {
+                    navBtn.classList.remove('bg-sky-400', 'text-slate-900');
+                    navBtn.classList.add('bg-white', 'text-slate-700', 'hover:bg-slate-100');
+                }
+            });
+
+            if (tabId === 'tab-game') {
+                setTimeout(resizeCanvas, 100);
+            }
+        }
+
+        // --- 2. 聲音系統 Web Audio API ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(frequency, duration, startTime, type = 'triangle', volume = 0.15) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, startTime);
+            gainNode.gain.setValueAtTime(volume, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+            
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        // 音效1：撿到垃圾 (Chirp)
+        function playCollectSound() {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            playTone(440.00, 0.08, now, 'triangle');
+            playTone(554.37, 0.08, now + 0.08, 'triangle');
+            playTone(659.25, 0.15, now + 0.16, 'triangle');
+        }
+
+        // 音效2：通關大捷 (Victory Fanfare)
+        function playVictorySound() {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const melody = [
+                { freq: 523.25, dur: 0.10 },
+                { freq: 659.25, dur: 0.10 },
+                { freq: 783.99, dur: 0.10 },
+                { freq: 1046.50, dur: 0.15 },
+                { freq: 880.00, dur: 0.10 },
+                { freq: 1046.50, dur: 0.35 }
+            ];
+            let delay = 0;
+            melody.forEach((note) => {
+                playTone(note.freq, note.dur, now + delay, 'triangle');
+                delay += note.dur * 0.85;
+            });
+        }
+
+        // 音效3：答對或成功放流 (Correct/Happy ring)
+        function playCorrectSound() {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            playTone(587.33, 0.1, now, 'sine', 0.2);
+            playTone(880.00, 0.2, now + 0.1, 'sine', 0.2);
+        }
+
+        // 音效4：警報/違法抓紅燈魚 (Wrong Warning Buzz)
+        function playWrongSound() {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            playTone(150.00, 0.2, now, 'sawtooth', 0.25);
+            playTone(150.00, 0.2, now + 0.25, 'sawtooth', 0.25);
+        }
+
+        // 音效5：遇到魚氣泡聲
+        function playFishSound() {
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            playTone(300.00, 0.05, now, 'sine', 0.25);
+            playTone(450.00, 0.05, now + 0.05, 'sine', 0.25);
+            playTone(600.00, 0.1, now + 0.1, 'sine', 0.25);
+        }
+
+
+        // --- 3. 互動遊戲與統一物件邏輯 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreText = document.getElementById('score-text');
+        const lntBadge = document.getElementById('lnt-badge');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const fishEduModal = document.getElementById('fish-edu-modal');
+        const bucketListEl = document.getElementById('bucket-list');
+
+        let score = 0;
+        let bubbles = [];
+        let cheers = [];
+        let myBucket = []; // 釣魚桶容器
+        let gameInitialized = false;
+        let gamePaused = false;
+        const keys = {};
+
+        const canoe = {
+            x: 0,
+            y: 0,
+            width: 140,
+            height: 60,
+            angle: 0,
+            targetAngle: 0,
+            speed: 6.5,
+            paddleAngle: 0,
+            baseY: 0
+        };
+
+        const trashTypes = [
+            { type: 'bottle', color: '#38bdf8', name: '寶特瓶' },
+            { type: 'can', color: '#f87171', name: '生鏽鋁罐' },
+            { type: 'bag', color: '#cbd5e1', name: '破塑膠袋' }
+        ];
+
+        const fishTypes = [
+            {
+                name: "基隆鎖管 (透抽)",
+                light: "green",
+                lightText: "🟢 建議食用 (綠燈)",
+                lightColorClass: "bg-emerald-500",
+                desc: "透抽與鎖管生命週期短、生長速度快，且多在本地近海以環境友善的燈火漁業捕撈。是基隆在地的特產，吃牠對海洋負擔最小，屬於【綠燈建議食用】！"
+            },
+            {
+                name: "秋刀魚",
+                light: "green",
+                lightText: "🟢 建議食用 (綠燈)",
+                lightColorClass: "bg-emerald-500",
+                desc: "秋刀魚屬於食物鏈底層，生長速度快，野生族群量尚豐。多吃秋刀魚等小型迴游魚類，能代替大型頂級掠食者，是最環保永續的聰明選擇！"
+            },
+            {
+                name: "野生土魠魚",
+                light: "yellow",
+                lightText: "🟡 想清楚再吃 (黃燈)",
+                lightColorClass: "bg-amber-500",
+                desc: "土魠魚雖然是我們便當、餐桌上的常客，但近年來近海野生捕獲量已經逐年急遽下滑。屬於【黃燈魚種】，消費時應想清楚再購買，不要過量食用喔！"
+            },
+            {
+                name: "人工養殖虱目魚",
+                light: "yellow",
+                lightText: "🟡 想清楚再吃 (黃燈)",
+                lightColorClass: "bg-amber-500",
+                desc: "虱目魚雖生長快且多為人工養殖，但養殖過程中需要消耗大量的「魚粉飼料」（由其他無辜小雜魚製成）。因此在環境永續上屬於【黃燈】，需適量享用。"
+            },
+            {
+                name: "野生黑鮪魚",
+                light: "red",
+                lightText: "🔴 避免食用 (紅燈)",
+                lightColorClass: "bg-rose-500",
+                desc: "黑鮪魚生長極慢、熟成期長，位於海洋食物鏈的頂端。由於人類長年過度捕撈，其數量已經瀕臨枯竭！且體內容易累積大量重金屬，屬於最嚴重的【紅燈避免食用】！"
+            },
+            {
+                name: "巨型豆腐鯊",
+                light: "red",
+                lightText: "🔴 避免食用 (紅燈)",
+                lightColorClass: "bg-rose-500",
+                desc: "豆腐鯊（鯨鯊）體型巨大，卻以濾食浮游生物為生，生命週期極長且繁衍緩慢。是受到國際和台灣法律嚴格保護的保育類動物，絕對禁止捕撈、買賣與食用！"
+            }
+        ];
+
+        let seaItems = [];
+
+        function resizeCanvas() {
+            if (document.getElementById('tab-game').classList.contains('hidden')) return;
+
+            const rect = canvas.parentNode.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            if (!gameInitialized || canvas.width < 100) {
+                initGame();
+            } else {
+                canoe.baseY = canvas.height * 0.35;
+                canoe.x = Math.max(50, Math.min(canvas.width - 50, canoe.x));
+                canoe.y = Math.max(canoe.baseY + 30, Math.min(canvas.height - 60, canoe.y));
+                
+                seaItems.forEach((item) => {
+                    item.x = Math.max(50, Math.min(canvas.width - 50, item.x));
+                    if (item.category === 'trash') {
+                        item.y = Math.max(canoe.baseY + 80, Math.min(canvas.height - 80, item.y));
+                    } else {
+                        item.y = Math.max(canoe.baseY + 120, Math.min(canvas.height - 100, item.y));
+                    }
+                });
+            }
+        }
+
+        // 初始化遊戲
+        function initGame() {
+            if (canvas.width < 100 || canvas.height < 100) return;
+
+            score = 0;
+            scoreText.innerText = `0 / 3`;
+            lntBadge.classList.remove('scale-100', 'opacity-100', 'animate-bounce');
+            lntBadge.classList.add('scale-0', 'opacity-0');
+            gameOverModal.classList.add('hidden');
+            fishEduModal.classList.add('hidden');
+            cheers = [];
+            myBucket = [];
+            updateBucketUI();
+            gamePaused = false;
+
+            // 獨木舟起始位置
+            canoe.baseY = canvas.height * 0.35; 
+            canoe.x = canvas.width / 2;
+            canoe.y = canoe.baseY + 50;
+            canoe.angle = 0;
+            canoe.targetAngle = 0;
+
+            seaItems = [];
+
+            // 1. 產生 3 個垃圾 (靜止，速度為 0)
+            const spacing = canvas.width / 4;
+            for (let i = 0; i < 3; i++) {
+                seaItems.push({
+                    category: 'trash',
+                    type: trashTypes[i].type,
+                    x: spacing * (i + 1) + (Math.random() * 60 - 30),
+                    y: canvas.height * 0.65 + (Math.random() * 100 - 50),
+                    size: 45,
+                    active: true,
+                    info: trashTypes[i],
+                    swimOffset: Math.random() * 100,
+                    angle: Math.random() * Math.PI,
+                    speedX: 0
+                });
+            }
+
+            // 2. 產生 5 隻不同種類的慢慢游的魚
+            for (let i = 0; i < 5; i++) {
+                const fishType = fishTypes[i % fishTypes.length];
+                seaItems.push({
+                    category: 'fish',
+                    type: fishType.name,
+                    x: Math.random() * canvas.width,
+                    y: (canoe.baseY + 120) + Math.random() * (canvas.height - canoe.baseY - 220),
+                    size: 70, // 加大魚兒尺寸，更精緻
+                    active: true,
+                    info: fishType,
+                    swimOffset: Math.random() * 100,
+                    angle: 0,
+                    // 🌟 魚慢慢游：速度設在 0.3 ~ 0.6 之間
+                    speedX: (Math.random() * 0.3 + 0.3) * (Math.random() > 0.5 ? 1 : -1) 
+                });
+            }
+
+            // 氣泡
+            bubbles = [];
+            for (let i = 0; i < 25; i++) {
+                bubbles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height + canvas.height * 0.4,
+                    r: Math.random() * 5 + 3,
+                    speed: Math.random() * 1.5 + 0.5
+                });
+            }
+
+            gameInitialized = true;
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        // 鍵盤與操控
+        window.addEventListener('keydown', (e) => {
+            initAudio();
+            keys[e.key] = true;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        const setupDpad = (btnId, keyName) => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.addEventListener('pointerdown', (e) => { e.preventDefault(); initAudio(); keys[keyName] = true; });
+                btn.addEventListener('pointerup', (e) => { e.preventDefault(); keys[keyName] = false; });
+                btn.addEventListener('pointerout', (e) => { e.preventDefault(); keys[keyName] = false; });
+            }
+        };
+        setupDpad('btn-up', 'ArrowUp');
+        setupDpad('btn-down', 'ArrowDown');
+        setupDpad('btn-left', 'ArrowLeft');
+        setupDpad('btn-right', 'ArrowRight');
+
+        // 背景與地標
+        function drawBackground() {
+            let skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#bae6fd');
+            skyGradient.addColorStop(0.3, '#38bdf8');
+            skyGradient.addColorStop(0.35, '#0ea5e9');
+            skyGradient.addColorStop(0.6, '#0284c7');
+            skyGradient.addColorStop(1, '#075985');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 基隆嶼
+            let islandLeft = canvas.width * 0.65;
+            let islandWidth = 230;
+            ctx.save();
+            ctx.fillStyle = '#0284c7';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(islandLeft, canoe.baseY);
+            ctx.quadraticCurveTo(islandLeft + islandWidth*0.3, canoe.baseY - 70, islandLeft + islandWidth*0.5, canoe.baseY - 50);
+            ctx.quadraticCurveTo(islandLeft + islandWidth*0.8, canoe.baseY - 90, islandLeft + islandWidth, canoe.baseY);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fill();
+            ctx.restore();
+
+            // 沙灘
+            ctx.save();
+            ctx.fillStyle = '#1e3a8a';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(-10, canvas.height + 10);
+            ctx.lineTo(-10, canvas.height - 40);
+            ctx.quadraticCurveTo(canvas.width/3, canvas.height - 70, canvas.width * 0.6, canvas.height - 30);
+            ctx.quadraticCurveTo(canvas.width * 0.8, canvas.height - 80, canvas.width + 10, canvas.height - 40);
+            ctx.lineTo(canvas.width + 10, canvas.height + 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            // 海底裝飾石頭
+            ctx.save();
+            ctx.fillStyle = '#334155';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 5;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.arc(100 + i * 320, canvas.height - 20, 25 + i*5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 氣泡
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            bubbles.forEach(b => {
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fill();
+                if (!gamePaused) {
+                    b.y -= b.speed;
+                    b.x += Math.sin(b.y / 15) * 0.4;
+                }
+                if (b.y < canoe.baseY) {
+                    b.y = canvas.height + 20;
+                    b.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        // 卡通格線
+        function drawGrid() {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([8, 8]);
+            const gridSize = 80;
+            
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, canoe.baseY);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = canoe.baseY; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // 卡通波浪
+        function drawWaves(time) {
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            for (let x = 0; x <= canvas.width + 20; x += 30) {
+                let y = canoe.baseY + Math.sin(x * 0.015 + time * 0.003) * 10;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        // 獨木舟與划手
+        function drawCanoe(time) {
+            ctx.save();
+            ctx.translate(canoe.x, canoe.y);
+            ctx.rotate(canoe.angle);
+            let floatOffset = Math.sin(time * 0.005) * 3;
+
+            // 船身
+            ctx.fillStyle = '#f97316';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 5;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-70, -10 + floatOffset);
+            ctx.quadraticCurveTo(0, 18 + floatOffset, 70, -10 + floatOffset);
+            ctx.quadraticCurveTo(0, -18 + floatOffset, -70, -10 + floatOffset);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // 裝飾白紋
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(50, -5 + floatOffset);
+            ctx.quadraticCurveTo(60, -8 + floatOffset, 70, -10 + floatOffset);
+            ctx.stroke();
+
+            // 人身 (救生衣)
+            ctx.fillStyle = '#fbbf24'; 
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(-10, -25 + floatOffset, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 人頭
+            ctx.fillStyle = '#fbcfe8'; 
+            ctx.beginPath();
+            ctx.arc(-10, -44 + floatOffset, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 遮陽帽
+            ctx.fillStyle = '#0ea5e9';
+            ctx.beginPath();
+            ctx.arc(-10, -47 + floatOffset, 10, Math.PI, 0);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-24, -47 + floatOffset);
+            ctx.lineTo(4, -47 + floatOffset);
+            ctx.stroke();
+
+            // 卡通槳
+            ctx.save();
+            ctx.translate(-10, -25 + floatOffset);
+            ctx.rotate(canoe.paddleAngle);
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(-60, 0);
+            ctx.lineTo(60, 0);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.ellipse(-65, 0, 16, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.ellipse(65, 0, 16, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        // 🌟 核心手繪渲染：為每一種魚種和垃圾畫上完全獨特、超萌的圖案
+        function drawCustomFish(ctx, name, size, time) {
+            ctx.save();
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4.5;
+            ctx.lineJoin = 'round';
+
+            switch (name) {
+                case "基隆鎖管 (透抽)":
+                    // 1. Pointy body (頭部三角錐)
+                    ctx.fillStyle = '#fda4af'; // 嫩粉紅色
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size * 0.4);
+                    ctx.lineTo(size * 0.25, -size * 0.1);
+                    ctx.lineTo(size * 0.2, size * 0.3);
+                    ctx.lineTo(-size * 0.2, size * 0.3);
+                    ctx.lineTo(-size * 0.25, -size * 0.1);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 2. 三角鰭
+                    ctx.fillStyle = '#f43f5e'; // 深粉紅
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size * 0.4);
+                    ctx.lineTo(size * 0.35, -size * 0.25);
+                    ctx.lineTo(size * 0.2, -size * 0.1);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size * 0.4);
+                    ctx.lineTo(-size * 0.35, -size * 0.25);
+                    ctx.lineTo(-size * 0.2, -size * 0.1);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 3. 萌大眼
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(-size * 0.08, size * 0.1, size * 0.08, 0, Math.PI*2);
+                    ctx.arc(size * 0.08, size * 0.1, size * 0.08, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(-size * 0.08, size * 0.1, size * 0.03, 0, Math.PI*2);
+                    ctx.arc(size * 0.08, size * 0.1, size * 0.03, 0, Math.PI*2);
+                    ctx.fill();
+
+                    // 4. 可愛小觸手 (擺動)
+                    ctx.strokeStyle = '#f43f5e';
+                    ctx.lineWidth = 4;
+                    for (let i = -2; i <= 2; i++) {
+                        let wave = Math.sin(time * 0.01 + i) * 6;
+                        ctx.beginPath();
+                        ctx.moveTo(i * size * 0.06, size * 0.3);
+                        ctx.quadraticCurveTo(i * size * 0.06 + wave, size * 0.45, i * size * 0.08, size * 0.55);
+                        ctx.stroke();
+                    }
+                    break;
+
+                case "秋刀魚":
+                    // 1. 極細長魚身
+                    let grd1 = ctx.createLinearGradient(0, -size * 0.1, 0, size * 0.1);
+                    grd1.addColorStop(0, '#0284c7'); // 寶藍背部
+                    grd1.addColorStop(0.5, '#cbd5e1'); // 銀灰亮面
+                    grd1.addColorStop(1, '#ffffff'); // 白腹
+                    ctx.fillStyle = grd1;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, size * 0.55, size * 0.09, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 2. 鮮黃尾巴
+                    ctx.fillStyle = '#eab308';
+                    ctx.beginPath();
+                    ctx.moveTo(-size * 0.55, 0);
+                    ctx.lineTo(-size * 0.7, -size * 0.12);
+                    ctx.lineTo(-size * 0.65, 0);
+                    ctx.lineTo(-size * 0.7, size * 0.12);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 3. 細小黃鰭
+                    ctx.fillStyle = '#eab308';
+                    ctx.beginPath();
+                    ctx.ellipse(-size * 0.2, size * 0.08, size * 0.08, size * 0.03, Math.PI/6, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 4. 眼
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.38, -size * 0.02, size * 0.04, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.39, -size * 0.02, size * 0.015, 0, Math.PI*2);
+                    ctx.fill();
+                    break;
+
+                case "野生土魠魚":
+                    // 1. 流線梭形身體
+                    let grd2 = ctx.createLinearGradient(0, -size * 0.15, 0, size * 0.15);
+                    grd2.addColorStop(0, '#475569'); // 深鋼青
+                    grd2.addColorStop(0.5, '#94a3b8'); // 銀鋼藍
+                    grd2.addColorStop(1, '#f1f5f9'); // 灰白
+                    ctx.fillStyle = grd2;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, size * 0.52, size * 0.17, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 2. 經典黑虎斑條紋 (背部下刷)
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 3.5;
+                    for (let x = -size * 0.35; x <= size * 0.25; x += size * 0.1) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, -size * 0.11);
+                        ctx.lineTo(x + size * 0.02, 0);
+                        ctx.stroke();
+                    }
+
+                    // 3. 鐮刀型大尾巴
+                    ctx.fillStyle = '#334155';
+                    ctx.beginPath();
+                    ctx.moveTo(-size * 0.5, 0);
+                    ctx.quadraticCurveTo(-size * 0.65, -size * 0.22, -size * 0.72, -size * 0.25);
+                    ctx.lineTo(-size * 0.64, 0);
+                    ctx.quadraticCurveTo(-size * 0.65, size * 0.22, -size * 0.72, size * 0.25);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 4. 眼睛
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.35, -size * 0.03, size * 0.05, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.36, -size * 0.03, size * 0.02, 0, Math.PI*2);
+                    ctx.fill();
+                    break;
+
+                case "人工養殖虱目魚":
+                    // 1. 亮白寬身
+                    let grd3 = ctx.createLinearGradient(0, -size * 0.2, 0, size * 0.2);
+                    grd3.addColorStop(0, '#94a3b8'); // 灰銀
+                    grd3.addColorStop(0.3, '#cbd5e1'); // 閃耀銀白
+                    grd3.addColorStop(1, '#ffffff');
+                    ctx.fillStyle = grd3;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, size * 0.5, size * 0.2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 2. 銳利深分叉大尾鰭
+                    ctx.fillStyle = '#64748b';
+                    ctx.beginPath();
+                    ctx.moveTo(-size * 0.48, 0);
+                    ctx.lineTo(-size * 0.68, -size * 0.22);
+                    ctx.lineTo(-size * 0.56, 0);
+                    ctx.lineTo(-size * 0.68, size * 0.22);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 3. 大大無辜的黑眼睛
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.3, -size * 0.02, size * 0.06, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.3, -size * 0.02, size * 0.035, 0, Math.PI*2);
+                    ctx.fill();
+                    break;
+
+                case "野生黑鮪魚":
+                    // 1. 胖胖胖魚雷大身體
+                    let grd4 = ctx.createLinearGradient(0, -size * 0.3, 0, size * 0.3);
+                    grd4.addColorStop(0, '#1e1b4b'); // 深靛深黑
+                    grd4.addColorStop(0.4, '#1d4ed8'); // 金屬皇家藍
+                    grd4.addColorStop(0.7, '#cbd5e1'); // 漸變銀
+                    grd4.addColorStop(1, '#ffffff'); // 亮白
+                    ctx.fillStyle = grd4;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, size * 0.52, size * 0.28, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 2. 亮黃色發光棘刺 (背鰭與腹鰭小棘)
+                    ctx.fillStyle = '#eab308'; // 亮黃
+                    for (let xOffset = -size * 0.2; xOffset <= size * 0.1; xOffset += size * 0.08) {
+                        ctx.beginPath();
+                        ctx.moveTo(xOffset, -size * 0.25);
+                        ctx.lineTo(xOffset + size * 0.04, -size * 0.31);
+                        ctx.lineTo(xOffset + size * 0.06, -size * 0.23);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.moveTo(xOffset, size * 0.25);
+                        ctx.lineTo(xOffset + size * 0.04, size * 0.31);
+                        ctx.lineTo(xOffset + size * 0.06, size * 0.23);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+
+                    // 3. 月牙形深藍黃鰭尾巴
+                    ctx.fillStyle = '#1e293b';
+                    ctx.beginPath();
+                    ctx.moveTo(-size * 0.5, 0);
+                    ctx.quadraticCurveTo(-size * 0.65, -size * 0.3, -size * 0.72, -size * 0.32);
+                    ctx.lineTo(-size * 0.64, 0);
+                    ctx.quadraticCurveTo(-size * 0.65, size * 0.3, -size * 0.72, size * 0.32);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 眼睛
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.32, -size * 0.05, size * 0.06, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.32, -size * 0.05, size * 0.03, 0, Math.PI*2);
+                    ctx.fill();
+                    break;
+
+                case "巨型豆腐鯊":
+                    // 1. 寬厚方平頭大身體 (Whale shark)
+                    ctx.fillStyle = '#1e3a8a'; // 深邃靛藍
+                    ctx.beginPath();
+                    ctx.moveTo(size * 0.42, -size * 0.15); // 方頭
+                    ctx.lineTo(size * 0.42, size * 0.15);
+                    ctx.quadraticCurveTo(size * 0.25, size * 0.25, -size * 0.1, size * 0.22);
+                    ctx.lineTo(-size * 0.48, size * 0.08);
+                    ctx.lineTo(-size * 0.48, -size * 0.08);
+                    ctx.lineTo(-size * 0.1, -size * 0.22);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 2. 整齊的一排排小白圓點 (豆腐鯊特徵)
+                    ctx.fillStyle = '#ffffff';
+                    for (let x = -size * 0.3; x <= size * 0.2; x += size * 0.12) {
+                        ctx.beginPath(); ctx.arc(x, -size * 0.08, 2.5, 0, Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(x + size*0.04, 0, 2.5, 0, Math.PI*2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(x, size * 0.08, 2.5, 0, Math.PI*2); ctx.fill();
+                    }
+
+                    // 3. 大大厚厚的尾巴
+                    ctx.fillStyle = '#172554';
+                    ctx.beginPath();
+                    ctx.moveTo(-size * 0.48, 0);
+                    ctx.lineTo(-size * 0.68, -size * 0.25);
+                    ctx.lineTo(-size * 0.58, 0);
+                    ctx.lineTo(-size * 0.68, size * 0.25);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // 4. 小小憨憨的眼睛 (豆腐鯊眼睛非常小)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.38, -size * 0.12, size * 0.035, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(size * 0.38, -size * 0.12, size * 0.015, 0, Math.PI*2);
+                    ctx.fill();
+                    break;
+            }
+            ctx.restore();
+        }
+
+        // 統一代繪製海洋物件（整合魚與垃圾）
+        function drawSeaItems(time) {
+            seaItems.forEach((item) => {
+                if (!item.active) return;
+
+                let yOffset = Math.sin(time * 0.003 + item.swimOffset) * 6;
+                let finalY = item.y + yOffset;
+
+                ctx.save();
+                ctx.translate(item.x, finalY);
+
+                // A) 如果是垃圾
+                if (item.category === 'trash') {
+                    ctx.rotate(item.angle);
+                    ctx.strokeStyle = '#1e293b';
+                    ctx.lineWidth = 4;
+
+                    if (item.type === 'bottle') {
+                        ctx.fillStyle = item.info.color;
+                        ctx.beginPath();
+                        drawRoundedRect(ctx, -10, -18, 20, 36, 6);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(-6, -24, 12, 6);
+                        ctx.strokeRect(-6, -24, 12, 6);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.arc(-3, -2, 4, 0, Math.PI*2);
+                        ctx.arc(3, -2, 4, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.fillStyle = '#000000';
+                        ctx.beginPath();
+                        ctx.arc(-3, -2, 1.5, 0, Math.PI*2);
+                        ctx.arc(3, -2, 1.5, 0, Math.PI*2);
+                        ctx.fill();
+                    } else if (item.type === 'can') {
+                        ctx.fillStyle = item.info.color;
+                        ctx.beginPath();
+                        drawRoundedRect(ctx, -12, -18, 24, 36, 4);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.fillStyle = '#cbd5e1';
+                        ctx.fillRect(-12, -22, 24, 4);
+                        ctx.strokeRect(-12, -22, 24, 4);
+                        ctx.strokeStyle = '#1e293b';
+                        ctx.lineWidth = 2.5;
+                        ctx.beginPath();
+                        ctx.moveTo(-7, -4); ctx.lineTo(-3, 0);
+                        ctx.moveTo(-3, -4); ctx.lineTo(-7, 0);
+                        ctx.moveTo(3, -4); ctx.lineTo(7, 0);
+                        ctx.moveTo(7, -4); ctx.lineTo(3, 0);
+                        ctx.stroke();
+                    } else if (item.type === 'bag') {
+                        ctx.fillStyle = 'rgba(241, 245, 249, 0.85)';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(-9, -12, 7, 0, Math.PI, true);
+                        ctx.arc(9, -12, 7, 0, Math.PI, true);
+                        ctx.stroke();
+                        ctx.fillStyle = '#ffffff';
+                        ctx.beginPath();
+                        ctx.arc(-4, 0, 4, 0, Math.PI*2);
+                        ctx.arc(4, 0, 4, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.fillStyle = '#1d4ed8';
+                        ctx.beginPath();
+                        ctx.arc(-4, 0, 2, 0, Math.PI*2);
+                        ctx.arc(4, 0, 2, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+
+                    // 垃圾周圍紅圈
+                    ctx.strokeStyle = '#f43f5e';
+                    ctx.lineWidth = 2.5;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, item.size / 2 + 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                } 
+                // B) 如果是魚 (調用自製卡通魚繪圖)
+                else if (item.category === 'fish') {
+                    if (item.speedX < 0) {
+                        ctx.scale(-1, 1);
+                    }
+                    drawCustomFish(ctx, item.type, item.size, time);
+                }
+
+                ctx.restore();
+            });
+        }
+
+        // 對話漂浮框
+        function drawCheers() {
+            for (let i = cheers.length - 1; i >= 0; i--) {
+                let c = cheers[i];
+                ctx.save();
+                ctx.globalAlpha = c.life / c.maxLife;
+                ctx.font = '900 16px "Noto Sans TC", sans-serif';
+                let textWidth = ctx.measureText(c.text).width;
+                let bubbleW = textWidth + 24;
+                let bubbleH = 34;
+
+                ctx.fillStyle = '#fef08a';
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                drawRoundedRect(ctx, c.x - bubbleW / 2, c.y - bubbleH / 2, bubbleW, bubbleH, 12);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(c.x - 6, c.y + bubbleH / 2);
+                ctx.lineTo(c.x + 6, c.y + bubbleH / 2);
+                ctx.lineTo(c.x, c.y + bubbleH / 2 + 8);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#1e293b';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(c.text, c.x, c.y);
+                ctx.restore();
+
+                if (!gamePaused) {
+                    c.y -= 1;
+                    c.life--;
+                }
+                if (c.life <= 0) {
+                    cheers.splice(i, 1);
+                }
+            }
+        }
+
+        // 遇到魚觸發決策視窗
+        let currentActiveFishIndex = -1;
+        function openFishModal(itemIndex) {
+            gamePaused = true;
+            currentActiveFishIndex = itemIndex;
+            const fish = seaItems[itemIndex];
+
+            playFishSound();
+
+            // 1. 初始化重置彈窗內容與按鈕
+            document.getElementById('feedback-alert').classList.add('hidden');
+            document.getElementById('btn-confirm-next').classList.add('hidden');
+            document.getElementById('decision-buttons').classList.remove('hidden');
+
+            const lightBadge = document.getElementById('fish-light-badge');
+            lightBadge.innerText = fish.info.lightText;
+            lightBadge.className = `inline-block px-4 py-1.5 rounded-full text-white font-black text-sm tracking-wider mb-3 ${fish.info.lightColorClass}`;
+            
+            const cardBg = document.getElementById('fish-card-bg');
+            let borderStyle = 'border-emerald-500';
+            if (fish.info.light === 'yellow') borderStyle = 'border-amber-500';
+            if (fish.info.light === 'red') borderStyle = 'border-rose-500';
+            cardBg.className = `bg-amber-50 border-8 ${borderStyle} p-6 rounded-3xl max-w-md w-full mx-4 text-center shadow-[8px_8px_0px_#1e293b] text-slate-800 transform scale-100 transition-transform duration-300`;
+
+            document.getElementById('fish-emoji').innerText = fish.info.light === 'green' ? '🟢' : (fish.info.light === 'yellow' ? '🟡' : '🔴');
+            document.getElementById('fish-name').innerText = fish.info.name;
+            document.getElementById('fish-desc').innerHTML = fish.info.desc;
+
+            fishEduModal.classList.remove('hidden');
+        }
+
+        // 🌟 做出「放生」或「入桶」抉擇時的邏輯
+        let latestChoiceResult = ''; // 'released' 或 'bucketed'
+        function makeFishDecision(choice) {
+            const fish = seaItems[currentActiveFishIndex];
+            const feedbackEl = document.getElementById('feedback-alert');
+            
+            // 隱藏決策按鈕，呈現確認前往按鈕
+            document.getElementById('decision-buttons').classList.add('hidden');
+            document.getElementById('btn-confirm-next').classList.remove('hidden');
+            feedbackEl.classList.remove('hidden');
+
+            if (choice === 'release') {
+                latestChoiceResult = 'released';
+                playCorrectSound(); // 快樂放生音
+
+                feedbackEl.className = "my-3 p-3 rounded-xl border-3 border-emerald-500 bg-emerald-50 text-emerald-800 font-extrabold text-xs text-left leading-relaxed";
+                feedbackEl.innerHTML = `💙 【成功放游！】<br>你溫柔地對待了牠！讓 <strong>${fish.info.name}</strong> 再次回到大海。你實踐了溫和、不干擾的無痕山林精神！`;
+            } 
+            else if (choice === 'keep') {
+                latestChoiceResult = 'bucketed';
+
+                if (fish.info.light === 'green') {
+                    playCorrectSound(); // 綠燈入桶
+                    feedbackEl.className = "my-3 p-3 rounded-xl border-3 border-emerald-500 bg-emerald-50 text-emerald-800 font-extrabold text-xs text-left leading-relaxed";
+                    feedbackEl.innerHTML = `🟢 【放進釣魚桶成功！】<br>這是永續推薦海鮮！你可以帶回家跟家人一起享受美味且環保的海鮮大餐！`;
+                    
+                    // 塞入我的釣魚桶
+                    myBucket.push({ name: fish.info.name, emoji: "🟢" });
+                } 
+                else if (fish.info.light === 'yellow') {
+                    playCorrectSound(); // 黃燈入桶 (提示)
+                    feedbackEl.className = "my-3 p-3 rounded-xl border-3 border-amber-500 bg-amber-50 text-amber-800 font-extrabold text-xs text-left leading-relaxed";
+                    feedbackEl.innerHTML = `🟡 【放進釣魚桶，但要注意喔！】<br>這種魚的野生族群量正在下滑。帶回家吃是可以的，但老師提醒大家：【適量就好，不可貪心多吃】喔！`;
+                    
+                    myBucket.push({ name: fish.info.name, emoji: "🟡" });
+                } 
+                else if (fish.info.light === 'red') {
+                    playWrongSound(); // 紅燈刺耳警報聲！
+                    feedbackEl.className = "my-3 p-3 rounded-xl border-3 border-rose-500 bg-rose-50 text-rose-800 font-extrabold text-xs text-left leading-relaxed";
+                    feedbackEl.innerHTML = `🔴 【警告：放進釣魚桶失敗！】<br><strong>不要帶走牠！</strong> 這是保護動物或瀕危物種。如果帶回家，不僅違法破壞生態，還會面臨鉅額罰款！我們必須放生牠！`;
+                    
+                    latestChoiceResult = 'released'; // 強制放回
+                }
+
+                updateBucketUI();
+            }
+        }
+
+        // 關閉魚彈窗，釋放魚
+        function closeFishModal() {
+            fishEduModal.classList.add('hidden');
+            gamePaused = false;
+
+            if (currentActiveFishIndex !== -1) {
+                const fish = seaItems[currentActiveFishIndex];
+                
+                // 動態噴出一個小對話框
+                let toastText = `謝謝放生 ${fish.info.name}！🐋`;
+                if (latestChoiceResult === 'bucketed') {
+                    toastText = `將 ${fish.info.name} 放進了釣魚桶！🪣`;
+                }
+
+                cheers.push({
+                    x: canoe.x,
+                    y: canoe.y - 50,
+                    text: toastText,
+                    life: 90,
+                    maxLife: 90
+                });
+
+                // 重置該魚的位置，讓牠從畫面外重新游入
+                fish.x = (fish.speedX > 0) ? -100 : canvas.width + 100;
+                fish.y = (canoe.baseY + 120) + Math.random() * (canvas.height - canoe.baseY - 220);
+            }
+            currentActiveFishIndex = -1;
+        }
+
+        // 更新釣魚桶 UI 面板
+        function updateBucketUI() {
+            if (myBucket.length === 0) {
+                bucketListEl.innerHTML = `<span class="text-center py-4 text-slate-400">目前桶子空空如也...</span>`;
+                return;
+            }
+
+            bucketListEl.innerHTML = '';
+            myBucket.forEach(item => {
+                const el = document.createElement('div');
+                el.className = "flex justify-between items-center bg-slate-100 p-1.5 px-2.5 rounded-lg border border-slate-300";
+                el.innerHTML = `
+                    <span>🐟 ${item.name}</span>
+                    <span class="text-xs font-black">${item.emoji}</span>
+                `;
+                bucketListEl.appendChild(el);
+            });
+        }
+
+        function gameLoop(time) {
+            if (document.getElementById('tab-game').classList.contains('hidden')) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            if (!gameInitialized || canvas.width < 100) {
+                resizeCanvas();
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            drawGrid();
+            drawWaves(time);
+
+            if (!gamePaused) {
+                let moveX = 0;
+                let moveY = 0;
+                if (keys['ArrowUp'] || keys['w'] || keys['W']) moveY = -1;
+                if (keys['ArrowDown'] || keys['s'] || keys['S']) moveY = 1;
+                if (keys['ArrowLeft'] || keys['a'] || keys['A']) moveX = -1;
+                if (keys['ArrowRight'] || keys['d'] || keys['D']) moveX = 1;
+
+                if (moveX !== 0 || moveY !== 0) {
+                    canoe.targetAngle = Math.atan2(moveY, moveX);
+                    let diff = canoe.targetAngle - canoe.angle;
+                    while (diff < -Math.PI) diff += Math.PI * 2;
+                    while (diff > Math.PI) diff -= Math.PI * 2;
+                    canoe.angle += diff * 0.15;
+
+                    canoe.x += moveX * canoe.speed;
+                    canoe.y += moveY * canoe.speed;
+
+                    canoe.x = Math.max(50, Math.min(canvas.width - 50, canoe.x));
+                    canoe.y = Math.max(canoe.baseY + 30, Math.min(canvas.height - 60, canoe.y));
+                    canoe.paddleAngle += 0.2;
+                } else {
+                    canoe.paddleAngle = Math.sin(time * 0.002) * 0.3;
+                }
+
+                // 統一遍巡 處理移動、碰撞
+                for (let i = 0; i < seaItems.length; i++) {
+                    const item = seaItems[i];
+                    if (!item.active) continue;
+
+                    // 只有魚才會移動，垃圾在原地靜止 (speedX 為 0)
+                    if (item.category === 'fish') {
+                        item.x += item.speedX;
+                        if (item.speedX > 0 && item.x > canvas.width + 50) {
+                            item.x = -50;
+                            item.y = (canoe.baseY + 120) + Math.random() * (canvas.height - canoe.baseY - 220);
+                        } else if (item.speedX < 0 && item.x < -50) {
+                            item.x = canvas.width + 50;
+                            item.y = (canoe.baseY + 120) + Math.random() * (canvas.height - canoe.baseY - 220);
+                        }
+                    }
+
+                    // 碰撞判斷
+                    let dx = item.x - canoe.x;
+                    let dy = item.y - canoe.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 42) {
+                        // 垃圾直接回收計分
+                        if (item.category === 'trash') {
+                            item.active = false;
+                            score++;
+                            scoreText.innerText = `${score} / 3`;
+                            playCollectSound();
+
+                            const cheersSlogans = [
+                                "耶！清理乾淨！🎉",
+                                "太棒了，好乾淨！✨",
+                                "基隆海洋變得超美！🐋",
+                                "減塑達人就是我！👍",
+                                "無痕海洋超讚！🌊"
+                            ];
+                            const randomSlogan = cheersSlogans[Math.floor(Math.random() * cheersSlogans.length)];
+                            cheers.push({
+                                x: canoe.x,
+                                y: canoe.y - 50,
+                                text: randomSlogan,
+                                life: 90,
+                                maxLife: 90
+                            });
+
+                            if (score === 3) {
+                                lntBadge.classList.remove('scale-0', 'opacity-0');
+                                lntBadge.classList.add('scale-100', 'opacity-100', 'animate-bounce');
+                                playVictorySound();
+                                setTimeout(() => {
+                                    gameOverModal.classList.remove('hidden');
+                                }, 2500);
+                            }
+                        } 
+                        // 遇到魚開啟食魚紅綠燈決策卡
+                        else if (item.category === 'fish') {
+                            openFishModal(i);
+                            break; 
+                        }
+                    }
+                }
+            }
+
+            drawSeaItems(time);
+            drawCanoe(time);
+            drawCheers();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+
+        // --- 4. 評量測驗 (互動題目邏輯) ---
+        const quizQuestions = [
+            {
+                q: "1. 請問下列哪一個海鮮是台灣永續海鮮指南推薦食用（綠燈）的美味？",
+                a: [
+                    "A) 黑鮪魚 (生長緩慢、過度捕撈)",
+                    "B) 基隆特產鎖管/透抽 (生長快、生命週期短)",
+                    "C) 珊瑚礁鹦哥魚 (守護珊瑚礁生態重要)"
+                ],
+                correct: 1, // B
+                hint: "綠燈魚種通常數量繁多、生長速度快，生命週期短！"
+            },
+            {
+                q: "2. 我們在海邊常看到『LNT』標章，這代表什麼意思？",
+                a: [
+                    "A) Leave No Trash (丟垃圾不要被抓到)",
+                    "B) Leave No Trace (無痕山林與海洋)",
+                    "C) Love Nature Together (一起愛大自然)"
+                ],
+                correct: 1, // B
+                hint: "LNT代表『不留下痕跡』，是一種親近山林海洋的守護精神。"
+            },
+            {
+                q: "3. 請問一個無意中隨手丟棄在海灘上的『塑膠瓶』，在海中需要多久才能被完全分解？",
+                a: [
+                    "A) 約 10 年",
+                    "B) 約 100 年",
+                    "C) 約 450 年！"
+                ],
+                correct: 2, // C
+                hint: "塑膠在海中極難分解，只會碎裂成更毒的微塑膠！"
+            },
+            {
+                q: "4. 下列哪一種行為最符合『食魚紅綠燈』的環保選魚原則？",
+                a: [
+                    "A) 多吃進口魚，少吃台灣本地的魚",
+                    "B) 選擇食物鏈低層（如小魚、貝類）多於食物鏈頂端（如黑鮪魚）",
+                    "C) 專門挑選罕見、昂貴的珊瑚礁魚類來吃"
+                ],
+                correct: 1, // B
+                hint: "大魚會經由生物累積含有大量重金屬，吃小魚與貝類對海洋最好。"
+            },
+            {
+                q: "5. 當我們在基隆划獨木舟玩水時，看到海龜正在游泳，以下哪一項做法是正確的？",
+                a: [
+                    "A) 划獨木舟悄悄靠近牠，伸出手去摸摸牠的殼",
+                    "B) 與海龜保持安全距離觀察，絕對不觸碰、不騷擾",
+                    "C) 拿手邊好吃的零食或麵包丟給海龜吃"
+                ],
+                correct: 1, // B
+                hint: "保持距離、不干擾、不餵食，就是最好的海洋環境無痕對待！"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let quizScore = 0;
+        let canAnswer = true;
+
+        function startQuiz() {
+            initAudio();
+            document.getElementById('quiz-start').classList.add('hidden');
+            document.getElementById('quiz-active').classList.remove('hidden');
+            document.getElementById('quiz-result').classList.add('hidden');
+            currentQuestionIndex = 0;
+            quizScore = 0;
+            canAnswer = true;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            canAnswer = true;
+            const qData = quizQuestions[currentQuestionIndex];
+            
+            const progressPercent = ((currentQuestionIndex) / quizQuestions.length) * 100;
+            document.getElementById('quiz-progress').style.width = `${progressPercent}%`;
+            document.getElementById('quiz-question-num').innerText = `第 ${currentQuestionIndex + 1} / ${quizQuestions.length} 題`;
+            document.getElementById('quiz-current-score').innerText = `目前分數：${quizScore}`;
+            
+            document.getElementById('quiz-question-text').innerText = qData.q;
+            
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            
+            const feedbackEl = document.getElementById('quiz-feedback');
+            feedbackEl.classList.add('hidden');
+
+            qData.a.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border-3 border-slate-800 text-sm font-bold bg-white hover:bg-slate-50 active:scale-98 transition cartoon-btn";
+                btn.innerText = option;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex) {
+            if (!canAnswer) return;
+            canAnswer = false;
+
+            const qData = quizQuestions[currentQuestionIndex];
+            const feedbackEl = document.getElementById('quiz-feedback');
+            const optionsContainer = document.getElementById('quiz-options');
+            
+            feedbackEl.classList.remove('hidden');
+
+            if (selectedIndex === qData.correct) {
+                quizScore += 20;
+                feedbackEl.className = "mt-4 p-3 rounded-xl border-2 border-emerald-400 bg-emerald-50 text-emerald-800 font-black text-sm text-center";
+                feedbackEl.innerText = "🎯 答對了！你太棒了！";
+                playCorrectSound();
+                
+                optionsContainer.children[selectedIndex].classList.add('bg-emerald-300');
+            } else {
+                feedbackEl.className = "mt-4 p-3 rounded-xl border-2 border-rose-400 bg-rose-50 text-rose-800 font-black text-sm text-center";
+                feedbackEl.innerText = `❌ 答錯囉！\n提示：${qData.hint}`;
+                playWrongSound();
+                
+                optionsContainer.children[selectedIndex].classList.add('bg-rose-300');
+                optionsContainer.children[qData.correct].classList.add('bg-emerald-200');
+            }
+
+            document.getElementById('quiz-current-score').innerText = `目前分數：${quizScore}`;
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizQuestions.length) {
+                    showQuestion();
+                } else {
+                    showResult();
+                }
+            }, 2200);
+        }
+
+        function showResult() {
+            document.getElementById('quiz-active').classList.add('hidden');
+            document.getElementById('quiz-result').classList.remove('hidden');
+            
+            const scorePercent = quizScore;
+            document.getElementById('result-score-text').innerText = `恭喜你得到了 ${scorePercent} 分！`;
+            
+            const commentEl = document.getElementById('result-comment');
+            const emojiEl = document.getElementById('result-emoji');
+            
+            if (scorePercent === 100) {
+                emojiEl.innerText = "🏆";
+                commentEl.innerHTML = `太不可思議了！你拿到了 <strong>100分滿分</strong>！<br>你已經具備最優秀的食魚紅綠燈與海洋保育知識，是名副其實的「基隆海洋小達人」！讓我們一起把這份永續海鮮的觀念分享給班上同學與家人吧！`;
+                playVictorySound();
+            } else if (scorePercent >= 60) {
+                emojiEl.innerText = "🥈";
+                commentEl.innerHTML = `太棒了！你獲得了 <strong>${scorePercent}分</strong>！<br>你已經成功學會了怎麼看食魚紅綠燈與愛護海灘的 LNT 守則，是個合格的「海洋守護先鋒」喔！`;
+                playVictorySound();
+            } else {
+                emojiEl.innerText = "🌱";
+                commentEl.innerHTML = `你獲得了 <strong>${scorePercent}分</strong>。<br>代表你還有一些小觀念需要釐清喔！沒關係，多逛逛「垃圾大解密」分頁，再次回到遊戲多抓幾隻魚，你一定可以成為最棒的海洋守護先鋒！加油！`;
+            }
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+
+        // --- 5. 初始化載入流程 ---
+        window.onload = function() {
+            resizeCanvas();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
